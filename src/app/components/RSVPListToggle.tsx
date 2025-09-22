@@ -16,7 +16,7 @@ export default function RSVPListToggle({ selectedTab, setSelectedTab }: RSVPList
         }`}
         onClick={() => setSelectedTab('groom')}
       >
-        Groom's RSVP
+        Groom&#39;s RSVP
       </button>
       <button
         className={`px-4 py-2 rounded-full text-sm ${
@@ -26,7 +26,7 @@ export default function RSVPListToggle({ selectedTab, setSelectedTab }: RSVPList
         }`}
         onClick={() => setSelectedTab('bride')}
       >
-        Bride's RSVP
+        Bride&#39;s RSVP
       </button>
     </div>
   );
