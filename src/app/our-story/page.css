@@ -1,0 +1,43 @@
+body 
+{ background: #eee; }
+
+.banner {
+  position: absolute;
+  left: 50%;
+  display: block;
+  margin: 6.25rem -12.5rem;
+  width: 25rem;
+  height: 3.75rem;
+  border: 1px solid #8a1;
+  font: normal 1.875rem/3.75rem 'Rye';
+  text-align: center;
+  background: #9b2;
+  border-radius: 0.25rem;
+  box-shadow: 0 0 1.875rem rgba(0,0,0,.15) inset,
+      				0 0.375rem 0.625rem rgba(0,0,0,.15);
+}
+
+.banner::before,
+.banner::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  left: -4.375rem;
+  top: 1.5rem;
+  display: block;
+  width: 5.875rem;
+  height: 0px;
+  border: 1.875rem solid #9b2;
+  border-right: 1.25rem solid #791;
+  border-bottom-color: #94b81e;
+  border-left-color: transparent;
+  transform: rotate(-5deg);
+}
+
+.banner::after {
+  left: auto;
+  right: -4.375rem;
+  border-left: 1.25rem solid #791;
+  border-right: 1.875rem solid transparent;
+  transform: rotate(5deg);
+}
