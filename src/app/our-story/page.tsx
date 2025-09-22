@@ -1,5 +1,5 @@
 import './page.css';
-import story from '@/app/pics/story.png';
+import story from '@/app/pics/Story.png';
 
 export default function OurStory() {
   return (
