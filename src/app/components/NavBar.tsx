@@ -62,7 +62,7 @@ const navItems = [
       <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4 z-10">
         <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
           <img src={Ganesha.src} alt="Ganesha" className="w-10 h-10 rounded-full" />
-          <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">|| Shree Ganeshay Namah ||</span>
+          <span className="self-center text-xl font-semibold whitespace-nowrap dark:text-white">|| Shree Ganeshay Namah ||</span>
         </Link>
         
 
