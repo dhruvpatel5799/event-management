@@ -24,9 +24,9 @@ export default function OurStory() {
           <div className="absolute right-[-20px] top-1/2 -translate-y-1/2 w-0 h-0 border-t-[20px] border-t-transparent border-b-[20px] border-b-transparent border-l-[20px] border-l-[#00a97f]"></div>
         </div>
         
-        <div className="banner text-white font-cursive italic">
+        {/*<div className="banner text-white font-cursive italic">
             A Simple CSS banner
-        </div>
+        </div>*/}
 
         <img src={story.src} alt="Story" className="w-full h-auto mt-55" />
     </div>
