@@ -68,7 +68,7 @@ const CountdownBox = () => {
       
       <div className="relative z-10">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-white mb-2">
+          <h2 className="text-xl font-bold text-white mb-2">
             🎉 Wedding Countdown
           </h2>
           <p className="text-blue-100 text-sm">
@@ -103,7 +103,7 @@ const CountdownBox = () => {
       <div className="absolute bottom-2 left-2 w-16 h-16 bg-white bg-opacity-10 rounded-full blur-lg"></div>
 
       {/* Close Button */}
-      <button onClick={() => setIsCountdownVisible(false)} className="absolute top-1 right-1 text-white">
+      <button onClick={() => setIsCountdownVisible(false)} className="absolute top-2 right-2 text-white">
         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
         </svg>
