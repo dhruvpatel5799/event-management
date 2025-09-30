@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import Ganesha from '@/app/pics/Ganesha.svg';
+import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
 
 export default function NavBar() {
 const [active, setActive] = useState('/home');
@@ -61,8 +62,8 @@ const navItems = [
     <nav className="relative bg-white border-gray-200 dark:bg-gray-900 z-10">
       <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4 z-10">
         <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
-          <img src={Ganesha.src} alt="Ganesha" className="w-10 h-10 rounded-full" />
-          <span className="self-center text-xl font-semibold whitespace-nowrap dark:text-white">|| Shree Ganeshay Namah ||</span>
+          <img src={Ganesha.src} alt="Ganesha" className="w-7 h-7 rounded-full" />
+          <span className="self-center text-lg font-semibold whitespace-nowrap dark:text-white">|| Shree Ganeshay Namah ||</span>
         </Link>
         
 
@@ -83,6 +84,13 @@ const navItems = [
               <Link href="/food-&-delicacies" className={getLinkClass('/food-&-delicacies')} onClick={closeMobileMenu}>Food & Delicacies</Link>
             </li>
           </ul>
+
+          <SignedOut>
+            <SignInButton mode="modal" />
+          </SignedOut>
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
       </div>
     </nav>
   
