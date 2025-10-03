@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import Ganesha from '@/app/pics/Ganesha.svg';
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/nextjs';
+import Image from 'next/image';
 
 export default function NavBar() {
 const [active, setActive] = useState('/home');
@@ -21,6 +22,12 @@ const navItems = [
         <path stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" d="M4.5 17H4a1 1 0 0 1-1-1 3 3 0 0 1 3-3h1m0-3.05A2.5 2.5 0 1 1 9 5.5M19.5 17h.5a1 1 0 0 0 1-1 3 3 0 0 0-3-3h-1m0-3.05a2.5 2.5 0 1 0-2-4.45m.5 13.5h-7a1 1 0 0 1-1-1 3 3 0 0 1 3-3h3a3 3 0 0 1 3 3 1 1 0 0 1-1 1Zm-1-9.5a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z"/>
       </svg>
    },
+   {
+    id: '/post', icon: <svg className="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" id="Outline" viewBox="0 0 24 24" width="24" height="24">
+      <path d="M23,11H13V1a1,1,0,0,0-1-1h0a1,1,0,0,0-1,1V11H1a1,1,0,0,0-1,1H0a1,1,0,0,0,1,1H11V23a1,1,0,0,0,1,1h0a1,1,0,0,0,1-1V13H23a1,1,0,0,0,1-1h0A1,1,0,0,0,23,11Z"/>
+    </svg>
+    
+   },
     { id: '/event-schedule', icon: <svg className="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
         <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"/>
       </svg>      
@@ -32,7 +39,6 @@ const navItems = [
   ];
 
   const pathname = usePathname();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(true);
 
   const isActive = (path: string) => {
     if (path === '/' && (pathname === '/' || pathname === '/home')) {
@@ -42,19 +48,11 @@ const navItems = [
   };
 
   const getLinkClass = (path: string) => {
-    const baseClass = "block py-2 px-3 rounded-sm";
-    const activeClass = "bg-transparent text-blue-700 dark:text-blue-500";
-    const inactiveClass = "hover:bg-transparent hover:text-blue-700 dark:text-white dark:hover:text-blue-500 dark:hover:bg-transparent";
+    const baseClass = "relative px-4 py-2 rounded-full transition-all duration-300 font-medium text-sm ";
+    const activeClass = "text-white bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg transform scale-105";
+    const inactiveClass = "text-gray-700 hover:text-purple-600 hover:bg-purple-50 dark:text-gray-300 dark:hover:text-purple-400";
     
     return baseClass + (isActive(path) ? activeClass : inactiveClass);
-  };
-
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -62,26 +60,26 @@ const navItems = [
     <nav className="relative bg-white border-gray-200 dark:bg-gray-900 z-10">
       <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4 z-10">
         <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
-          <img src={Ganesha.src} alt="Ganesha" className="w-7 h-7 rounded-full" />
-          <span className="self-center text-lg font-semibold whitespace-nowrap dark:text-white">|| Shree Ganeshay Namah ||</span>
+          <Image src={Ganesha.src} alt="Ganesha" className="rounded-full" width={28} height={28} />
+          <span className="self-center text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-semibold whitespace-nowrap dark:text-white">|| Shree Ganeshay Namah ||</span>
         </Link>
         
 
           <ul className="hidden lg:flex font-medium space-x-8 rtl:space-x-reverse">
             <li>
-              <Link href="/home" className={getLinkClass('/home')} onClick={closeMobileMenu}>Home</Link>
+              <Link href="/home" className={getLinkClass('/home')}>Home</Link>
             </li>
             <li>
-              <Link href="/our-story" className={getLinkClass('/our-story')} onClick={closeMobileMenu}>Our Story</Link>
+              <Link href="/our-story" className={getLinkClass('/our-story')}>Our Story</Link>
             </li>
             <li>
-              <Link href="/guest-list" className={getLinkClass('/guest-list')} onClick={closeMobileMenu}>RSVP</Link>
+              <Link href="/guest-list" className={getLinkClass('/guest-list')}>RSVP</Link>
             </li>
             <li>
-              <Link href="/event-schedule" className={getLinkClass('/event-schedule')} onClick={closeMobileMenu}>Event Schedule</Link>
+              <Link href="/event-schedule" className={getLinkClass('/event-schedule')}>Event Schedule</Link>
             </li>
             <li>
-              <Link href="/food-&-delicacies" className={getLinkClass('/food-&-delicacies')} onClick={closeMobileMenu}>Food & Delicacies</Link>
+              <Link href="/food-&-delicacies" className={getLinkClass('/food-&-delicacies')}>Food & Delicacies</Link>
             </li>
           </ul>
 
