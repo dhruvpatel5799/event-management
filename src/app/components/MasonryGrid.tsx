@@ -20,6 +20,7 @@ import img18 from '@/app/pics/18.jpg';
 import img19 from '@/app/pics/19.jpg';
 import img20 from '@/app/pics/20.jpg';
 import img21 from '@/app/pics/21.jpg';
+import Image from 'next/image';
 
 interface ImageData {
   id: number;
@@ -61,10 +62,12 @@ const MasonryGrid = () => {
      >
        {images.map((image, index) => (
          <div key={index} className="mb-1">
-           <img
+           <Image
              className="h-auto w-full rounded-lg"
              src={image.src}
              alt={image.alt}
+             width={200}
+             height={200}
            />
          </div>
        ))}
