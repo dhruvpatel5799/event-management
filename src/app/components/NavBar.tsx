@@ -41,7 +41,7 @@ const navItems = [
   const pathname = usePathname();
 
   const isActive = (path: string) => {
-    if (path === '/' && (pathname === '/' || pathname === '/home')) {
+    if (path === '/home' && (pathname === '/' || pathname === '/home')) {
       return true;
     }
     return pathname === path;
@@ -58,14 +58,13 @@ const navItems = [
   return (
     <>
     <nav className="relative bg-white border-gray-200 dark:bg-gray-900 z-10">
-      <div className="max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4 z-10">
-        <Link href="/" className="flex items-center space-x-3 rtl:space-x-reverse">
+      <div className="flex flex-wrap items-center justify-between p-4 z-10">
+        <Link href="/" className="flex items-center space-x-2">
           <Image src={Ganesha.src} alt="Ganesha" className="rounded-full" width={28} height={28} />
-          <span className="self-center text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-semibold whitespace-nowrap dark:text-white">|| Shree Ganeshay Namah ||</span>
+          <span className="text-md sm:text-lg bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent font-semibold whitespace-nowrap italic font-[cursive]">|| Shree Ganeshay Namah ||</span>
         </Link>
         
-
-          <ul className="hidden lg:flex font-medium space-x-8 rtl:space-x-reverse">
+          <ul className="hidden lg:flex font-medium space-x-4 ml-auto mr-4">
             <li>
               <Link href="/home" className={getLinkClass('/home')}>Home</Link>
             </li>
@@ -84,7 +83,9 @@ const navItems = [
           </ul>
 
           <SignedOut>
-            <SignInButton mode="modal" />
+            <div className="h-8 w-18 flex justify-center items-center bg-gradient-to-r from-purple-600 via-pink-600 to-yellow-600 rounded-full">
+              <span className="px-2 text-gray-700 bg-white dark:bg-gray-900 rounded-full"><SignInButton mode="modal" /></span>
+            </div>
           </SignedOut>
           <SignedIn>
             <UserButton />
@@ -93,7 +94,7 @@ const navItems = [
     </nav>
   
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-sm z-50">
-      <ul className="flex justify-between items-center px-6 py-3">
+      <ul className="flex justify-between items-center px-4 py-3">
         {navItems.map(item => (
           <li
             key={item.id}

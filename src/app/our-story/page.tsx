@@ -1,9 +1,10 @@
+import Image from 'next/image';
 import './page.css';
-import story from '@/app/pics/Story.png';
+import story from '@/app/pics/story.png';
 
 export default function OurStory() {
   return (
-    <div className="text-center bg-[#f5e3c8] py-8 font-serif absolute w-full -z-2">
+    <div className="text-center bg-[#f5e3c8] py-8 font-serif absolute w-dvw -z-2">
       <p className="text-[18px] text-[#800000] font-semibold mb-2">MEET THE COUPLE</p>
 
       <div className="relative justify-self-center text-white text-2xl italic font-medium w-3xs h-10 bg-rose-500 rounded-sm m-6 p-2
@@ -28,7 +29,7 @@ export default function OurStory() {
             A Simple CSS banner
         </div>*/}
 
-        <img src={story.src} alt="Story" className="w-full h-auto mt-55" />
+        <Image src={story.src} alt="Story" className="w-full h-auto mt-55" width={1000} height={1000} />
     </div>
   );
 }
