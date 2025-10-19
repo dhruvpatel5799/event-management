@@ -1,5 +1,5 @@
-import CountdownBox from '../components/CountdownBox';
-import MasonryGrid from '../components/MasonryGrid';
+import CountdownBox from '../Components/CountdownBox';
+import MasonryGrid from '../Components/MasonryGrid';
 
 export default function Home() {
   return (

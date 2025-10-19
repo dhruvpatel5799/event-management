@@ -1,32 +1,78 @@
 'use client';
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
-import { SignedIn } from '@clerk/nextjs';
+import { SignedIn, useUser } from '@clerk/nextjs';
+import { compressImage, uploadToCloudinary, cleanupObjectUrl, type ImageMetadata } from '@/app/services/imageService';
 
 interface UploadedImage {
+  id: string;
   file: File;
   preview: string;
-  id: string;
-  status: 'uploading' | 'success' | 'error';
-  progress?: number;
+  status: 'pending' | 'compressing' | 'uploading' | 'success' | 'error';
+  progress: number;
   fileName: string;
   fileSize: number;
+  optimizedSize?: number;
+  metadata?: ImageMetadata;
+  url?: string;
+  error?: string;
 }
 
-export default function ImageUpload() {
+interface ImageUploadProps {
+  onUploadComplete?: (images: UploadedImage[]) => void;
+  maxFiles?: number;
+  acceptedFormats?: string[];
+  maxSizeKB?: number;
+}
+
+export default function ImageUpload({ 
+  onUploadComplete,
+  maxFiles = 10,
+  acceptedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/svg', 'image/svg+xml'],
+  maxSizeKB = 3000 // 3MB for high quality
+}: ImageUploadProps) {
+  const { user } = useUser();
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [duplicateFiles, setDuplicateFiles] = useState<string[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileChange = async (files: FileList | null) => {
-    if (!files) return;
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      uploadedImages.forEach(img => {
+        if (img.preview) {
+          cleanupObjectUrl(img.preview);
+        }
+      });
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const updateImageStatus = useCallback((id: string, updates: Partial<UploadedImage>) => {
+    setUploadedImages(prev => 
+      prev.map(img => img.id === id ? { ...img, ...updates } : img)
+    );
+  }, []);
+
+  const processFiles = useCallback(async (files: FileList) => {
+    if (files.length === 0) return;
+
+    // Check file limits
+    if (uploadedImages.length + files.length > maxFiles) {
+      alert(`Maximum ${maxFiles} files allowed. You can upload ${maxFiles - uploadedImages.length} more files.`);
+      return;
+    }
 
     const newImages: UploadedImage[] = [];
     const duplicates: string[] = [];
+    const invalidFiles: string[] = [];
 
-    // Check for duplicates and create preview URLs for new files
+    // Process each file
     Array.from(files).forEach((file) => {
+      // Check for duplicates
       const isDuplicate = uploadedImages.some(
         existingImg =>
           existingImg.fileName === file.name &&
@@ -35,177 +81,198 @@ export default function ImageUpload() {
 
       if (isDuplicate) {
         duplicates.push(file.name);
-      } else {
-        const preview = URL.createObjectURL(file);
-        const id = Math.random().toString(36).substr(2, 9);
-        newImages.push({
-          file,
-          preview,
-          id,
-          status: 'uploading',
-          progress: 0,
-          fileName: file.name,
-          fileSize: file.size
-        });
+        return;
       }
+
+      // Validate file type
+      if (!acceptedFormats.includes(file.type)) {
+        invalidFiles.push(`${file.name} (unsupported format)`);
+        return;
+      }
+
+      // Validate file size (10MB max)
+      if (file.size > 10 * 1024 * 1024) {
+        invalidFiles.push(`${file.name} (too large)`);
+        return;
+      }
+
+      // Create image entry
+      const preview = URL.createObjectURL(file);
+      const id = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      newImages.push({
+        id,
+        file,
+        preview,
+        status: 'pending',
+        progress: 0,
+        fileName: file.name,
+        fileSize: file.size,
+      });
     });
 
-    // Show duplicate notification
+    // Show notifications
     if (duplicates.length > 0) {
       setDuplicateFiles(duplicates);
-      setTimeout(() => setDuplicateFiles([]), 3000); // Clear after 3 seconds
+      setTimeout(() => setDuplicateFiles([]), 4000);
     }
 
-    // Reset file input to allow reselecting the same files
+    if (invalidFiles.length > 0) {
+      alert(`Invalid files: ${invalidFiles.join(', ')}`);
+    }
+
+    // Add valid images and start upload process
+    if (newImages.length > 0) {
+      setUploadedImages(prev => [...prev, ...newImages]);
+      setIsUploading(true);
+      
+      // Process uploads
+      await Promise.all(newImages.map(imageData => uploadSingleImage(imageData)));
+      
+      setIsUploading(false);
+      
+      // Notify parent component
+      if (onUploadComplete) {
+        const successfulImages = uploadedImages.filter(img => img.status === 'success');
+        onUploadComplete(successfulImages);
+      }
+    }
+
+    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uploadedImages, maxFiles, acceptedFormats, onUploadComplete]);
 
-    // Only add new (non-duplicate) images
-    if (newImages.length > 0) {
-      setUploadedImages(prev => [...prev, ...newImages]);
-
-      // Upload files to Cloudinary one by one
-      for (const imageData of newImages) {
-        try {
-          // Update progress to show upload starting
-          setUploadedImages(prev =>
-            prev.map(img =>
-              img.id === imageData.id
-                ? { ...img, progress: 10 }
-                : img
-            )
-          );
-
-          const formData = new FormData();
-          formData.append('file', imageData.file);
-          formData.append('public_id', process.env.NEXT_PUBLIC_CLOUDINARY_PUBLIC_ID ?? '');
-          formData.append('upload_preset', 'unsigned');
-          formData.append('api_key', process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY ?? '');
-          formData.append('timestamp', new Date().getTime().toString());
-
-          // Simulate progress updates
-          const progressInterval = setInterval(() => {
-            setUploadedImages(prev =>
-              prev.map(img =>
-                img.id === imageData.id && img.progress! < 90
-                  ? { ...img, progress: img.progress! + 10 }
-                  : img
-              )
-            );
-          }, 200);
-
-          await fetch(`https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`, { method: 'POST', body: formData });
-
-          clearInterval(progressInterval);
-
-          // Mark as successful
-          setUploadedImages(prev =>
-            prev.map(img =>
-              img.id === imageData.id
-                ? { ...img, status: 'success', progress: 100 }
-                : img
-            )
-          );
-
-        } catch (error) {
-          console.error('Upload failed:', error);
-
-          // Mark as error
-          setUploadedImages(prev =>
-            prev.map(img =>
-              img.id === imageData.id
-                ? { ...img, status: 'error' }
-                : img
-            )
-          );
+  const uploadSingleImage = useCallback(async (imageData: UploadedImage) => {
+    try {
+      // Step 1: Compression (or skip if under 2MB)
+      const fileSizeMB = imageData.file.size / (1024 * 1024);
+      const willCompress = fileSizeMB >= 2;
+      
+      updateImageStatus(imageData.id, { 
+        status: willCompress ? 'compressing' : 'uploading', 
+        progress: willCompress ? 10 : 20 
+      });
+      
+      const { file: compressedFile, metadata } = await compressImage(
+        imageData.file,
+        { 
+          maxSizeKB, 
+          quality: 0.92,      // High quality for modern content
+          maxWidth: 2560,     // Support higher resolutions
+          maxHeight: 1440     // Support higher resolutions
         }
+      );
+
+      updateImageStatus(imageData.id, { 
+        status: 'uploading', 
+        progress: 30,
+        optimizedSize: compressedFile.size,
+        metadata 
+      });
+
+      // Step 2: Upload directly to Cloudinary (bypassing Vercel)
+      const uploadResult = await uploadToCloudinary(compressedFile);
+
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || 'Upload failed');
       }
+
+      updateImageStatus(imageData.id, { 
+        status: 'success', 
+        progress: 100,
+        url: uploadResult.url,
+        error: undefined
+      });
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+      updateImageStatus(imageData.id, { 
+        status: 'error', 
+        progress: 0,
+        error: errorMessage 
+      });
     }
-  };
+  }, [maxSizeKB, updateImageStatus]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback(async (files: FileList | null) => {
+    if (!files) return;
+    await processFiles(files);
+  }, [processFiles]);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     handleFileChange(e.target.files);
-  };
+  }, [handleFileChange]);
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     handleFileChange(e.dataTransfer.files);
-  };
+  }, [handleFileChange]);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
-  };
+  }, []);
 
-  const handleDragLeave = (e: React.DragEvent) => {
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-  };
+  }, []);
 
-  const removeImage = (id: string) => {
+  const removeImage = useCallback((id: string) => {
     setUploadedImages(prev => {
-      const updated = prev.filter(img => img.id !== id);
-      // Clean up preview URL
       const imageToRemove = prev.find(img => img.id === id);
-      if (imageToRemove) {
-        URL.revokeObjectURL(imageToRemove.preview);
+      if (imageToRemove?.preview) {
+        cleanupObjectUrl(imageToRemove.preview);
       }
-      return updated;
+      return prev.filter(img => img.id !== id);
     });
-  };
+  }, []);
 
-  const retryUpload = async (id: string) => {
+  const retryUpload = useCallback(async (id: string) => {
     const imageToRetry = uploadedImages.find(img => img.id === id);
     if (!imageToRetry) return;
 
-    // Reset status to uploading
-    setUploadedImages(prev =>
-      prev.map(img =>
-        img.id === id
-          ? { ...img, status: 'uploading', progress: 0 }
-          : img
-      )
-    );
+    updateImageStatus(id, { status: 'pending', progress: 0, error: undefined });
+    await uploadSingleImage(imageToRetry);
+  }, [uploadedImages, updateImageStatus, uploadSingleImage]);
 
-    // Retry upload
-    try {
-      const formData = new FormData();
-      formData.append('file', imageToRetry.file);
-      formData.append('public_id', '8af5852bc4b426eb4914a950149868');
-      formData.append('upload_preset', 'unsigned');
-      formData.append('api_key', '646742571766164');
-      formData.append('timestamp', new Date().getTime().toString());
-
-      await fetch('https://api.cloudinary.com/v1_1/dnc9oimdm/image/upload', { method: 'POST', body: formData });
-
-      setUploadedImages(prev =>
-        prev.map(img =>
-          img.id === id
-            ? { ...img, status: 'success', progress: 100 }
-            : img
-        )
-      );
-    } catch (error) {
-      setUploadedImages(prev =>
-        prev.map(img =>
-          img.id === id
-            ? { ...img, status: 'error' }
-            : img
-        )
-      );
-      return error;
-    }
-  };
-
-  const openFileDialog = () => {
+  const openFileDialog = useCallback(() => {
     fileInputRef.current?.click();
-  };
+  }, []);
 
-  const isAnyUploading = uploadedImages.some(img => img.status === 'uploading');
+  const clearAllImages = useCallback(() => {
+    uploadedImages.forEach(img => {
+      if (img.preview) {
+        cleanupObjectUrl(img.preview);
+      }
+    });
+    setUploadedImages([]);
+  }, [uploadedImages]);
+
+  // Computed values
+  const isAnyProcessing = uploadedImages.some(img => 
+    ['pending', 'compressing', 'uploading'].includes(img.status)
+  );
   const successCount = uploadedImages.filter(img => img.status === 'success').length;
   const errorCount = uploadedImages.filter(img => img.status === 'error').length;
+  const totalSizeReduction = uploadedImages.reduce((acc, img) => {
+    if (img.optimizedSize && img.fileSize > img.optimizedSize) {
+      return acc + (img.fileSize - img.optimizedSize);
+    }
+    return acc;
+  }, 0);
+
+  const formatFileSize = (bytes: number): string => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
   return (
     <SignedIn>
@@ -239,12 +306,12 @@ export default function ImageUpload() {
           {/* Upload Status Summary */}
           {uploadedImages.length > 0 && (
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-sm mb-2">
                 <div className="flex items-center space-x-4">
-                  {isAnyUploading && (
+                  {isAnyProcessing && (
                     <div className="flex items-center text-blue-600">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-                      Uploading...
+                      Processing...
                     </div>
                   )}
                   {successCount > 0 && (
@@ -265,9 +332,17 @@ export default function ImageUpload() {
                   )}
                 </div>
                 <div className="text-gray-500">
-                  {uploadedImages.length} total
+                  {uploadedImages.length}/{maxFiles} files
                 </div>
               </div>
+              {totalSizeReduction > 0 && (
+                <div className="text-xs text-green-600 flex items-center">
+                  <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                  Saved {formatFileSize(totalSizeReduction)} through optimization
+                </div>
+              )}
             </div>
           )}
 
@@ -332,10 +407,10 @@ export default function ImageUpload() {
 
                 <button
                   onClick={openFileDialog}
-                  disabled={isAnyUploading}
+                  disabled={isAnyProcessing || uploadedImages.length >= maxFiles}
                   className="text-blue-600 hover:text-blue-700 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Add more photos
+                  {uploadedImages.length >= maxFiles ? 'Maximum files reached' : 'Add more photos'}
                 </button>
               </div>
             )}
@@ -358,13 +433,22 @@ export default function ImageUpload() {
                       />
 
                       {/* Upload Status Overlay */}
-                      {image.status === 'uploading' && (
-                        <div className="absolute inset-0 bg-gray-500 bg-opacity-0.5 flex items-center justify-center">
+                      {['pending', 'compressing', 'uploading'].includes(image.status) && (
+                        <div className="absolute inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center">
                           <div className="text-center text-white">
                             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
-                            <div className="text-xs">
+                            <div className="text-xs font-medium">
+                              {image.status === 'compressing' ? 'Optimizing...' : 
+                               image.status === 'uploading' ? 'Uploading...' : 'Processing...'}
+                            </div>
+                            <div className="text-xs opacity-75">
                               {image.progress}%
                             </div>
+                            {image.status === 'uploading' && image.fileSize < 2 * 1024 * 1024 && (
+                              <div className="text-xs opacity-75 mt-1">
+                                Original quality preserved
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}
@@ -380,7 +464,10 @@ export default function ImageUpload() {
 
                       {/* Error Indicator */}
                       {image.status === 'error' && (
-                        <div className="absolute inset-0 bg-red-500 bg-opacity-20 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-red-500 bg-opacity-20 flex flex-col items-center justify-center p-2">
+                          <div className="text-xs text-red-800 text-center mb-2 font-medium">
+                            {image.error || 'Upload failed'}
+                          </div>
                           <button
                             onClick={() => retryUpload(image.id)}
                             className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-full text-xs transition-colors"
@@ -394,7 +481,7 @@ export default function ImageUpload() {
                     {/* Remove Button */}
                     <button
                       onClick={() => removeImage(image.id)}
-                      disabled={image.status === 'uploading'}
+                      disabled={['compressing', 'uploading'].includes(image.status)}
                       className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-50 group-hover:opacity-100 transition-opacity duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,14 +490,24 @@ export default function ImageUpload() {
                     </button>
 
                     {/* File Info with Status */}
-                    <div className="mt-2 text-xs text-gray-500 truncate flex items-center">
-                      <span className="flex-1 truncate">{image.fileName}</span>
-                      {image.status === 'success' && (
-                        <span className="ml-1 text-green-500">✓</span>
-                      )}
-                      {image.status === 'error' && (
-                        <span className="ml-1 text-red-500">✗</span>
-                      )}
+                    <div className="mt-2 text-xs text-gray-500">
+                      <div className="flex items-center justify-between">
+                        <span className="truncate flex-1">{image.fileName}</span>
+                        {image.status === 'success' && (
+                          <span className="ml-1 text-green-500">✓</span>
+                        )}
+                        {image.status === 'error' && (
+                          <span className="ml-1 text-red-500">✗</span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <span>{formatFileSize(image.fileSize)}</span>
+                        {image.optimizedSize && image.optimizedSize < image.fileSize && (
+                          <span className="text-green-600">
+                            → {formatFileSize(image.optimizedSize)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -419,21 +516,19 @@ export default function ImageUpload() {
               {/* Action Buttons */}
               <div className="mt-6 flex justify-center space-x-4">
                 <button
-                  onClick={() => {
-                    uploadedImages.forEach(img => URL.revokeObjectURL(img.preview));
-                    setUploadedImages([]);
-                  }}
-                  disabled={isAnyUploading}
+                  onClick={clearAllImages}
+                  disabled={isAnyProcessing}
                   className="px-6 py-2 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Clear All
                 </button>
 
                 <button
-                  disabled={isAnyUploading || successCount === 0}
+                  disabled={isAnyProcessing || successCount === 0}
+                  onClick={() => onUploadComplete?.(uploadedImages.filter(img => img.status === 'success'))}
                   className="px-8 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full transition-all duration-300 font-semibold"
                 >
-                  {isAnyUploading ? 'Uploading...' : `Share ${successCount} Photo${successCount !== 1 ? 's' : ''}`}
+                  {isAnyProcessing ? 'Processing...' : `Share ${successCount} Photo${successCount !== 1 ? 's' : ''}`}
                 </button>
               </div>
             </div>

@@ -1,4 +1,4 @@
-import EventSchedule from '@/app/components/EventSchedule';
+import EventSchedule from '@/app/Components/EventSchedule';
 import { ScheduleDay } from '@/app/types';
 
 const scheduleData: ScheduleDay[] = [
