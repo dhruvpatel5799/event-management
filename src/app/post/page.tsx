@@ -1,5 +1,5 @@
-import ImageUpload from "../Components/ImageUpload";
-import SignInPopup from "../Components/SignInPopup";
+import ImageUpload from "../components/ImageUpload";
+import SignInPopup from "../components/SignInPopup";
 
 
 export default function Post() {

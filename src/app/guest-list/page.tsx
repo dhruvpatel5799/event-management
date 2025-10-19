@@ -1,4 +1,4 @@
-import RSVPListWrapper from '../Components/RSVPListWrapper';
+import RSVPListWrapper from '../components/RSVPListWrapper';
 
 const contacts = [
   { name: 'ABC', role: 'Team' },
