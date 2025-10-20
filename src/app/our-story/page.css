@@ -6,8 +6,9 @@ body
   left: 50%;
   display: block;
   margin: 6.25rem -12.5rem;
-  width: 25rem;
+  width: 20rem;
   height: 3.75rem;
+  max-width: 100dvw;
   border: 1px solid #8a1;
   font: normal 1.875rem/3.75rem 'Rye';
   text-align: center;
