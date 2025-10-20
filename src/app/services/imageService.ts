@@ -4,7 +4,7 @@
 const DEFAULT_QUALITY = 0.92;        // High quality for modern content
 const DEFAULT_MAX_WIDTH = 2560;      // Support higher resolutions
 const DEFAULT_MAX_HEIGHT = 1440;     // Support higher resolutions
-const MAX_FILE_SIZE_MB = 3;          // 3MB max for high quality
+const MAX_FILE_SIZE_MB = 2;          // 2MB max for high quality
 const QUALITY_THRESHOLDS = {
   HIGH_QUALITY: 0.95,     // For photos with fine details
   STANDARD: 0.92,         // Default high quality
@@ -95,8 +95,7 @@ export async function compressImage(
         }
 
         // Determine optimal quality based on image characteristics
-        const optimalQuality = await determineOptimalQuality(
-          file, 
+        const optimalQuality = await determineOptimalQuality( 
           newWidth, 
           newHeight, 
           quality
@@ -107,8 +106,7 @@ export async function compressImage(
           canvas, 
           file.name, 
           format, 
-          optimalQuality,
-          file.size
+          optimalQuality
         );
 
         const metadata: ImageMetadata = {
@@ -134,12 +132,10 @@ export async function compressImage(
  * Determine optimal quality based on image characteristics
  */
 async function determineOptimalQuality(
-  file: File,
   width: number,
   height: number,
   requestedQuality: number
 ): Promise<number> {
-  const fileSizeMB = file.size / (1024 * 1024);
   const megapixels = (width * height) / 1000000;
   
   // High-resolution images can use slightly lower quality without visible loss
@@ -163,8 +159,7 @@ async function compressWithAdaptiveQuality(
   canvas: HTMLCanvasElement,
   fileName: string,
   format: string,
-  targetQuality: number,
-  originalSize: number
+  targetQuality: number
 ): Promise<File> {
   const maxSizeBytes = MAX_FILE_SIZE_MB * 1024 * 1024;
   
@@ -237,7 +232,7 @@ async function getImageDimensions(file: File): Promise<{ width: number; height: 
  * Upload image directly to Cloudinary using unsigned upload
  * Clean, simple implementation - user context stored in database later
  */
-export async function uploadToCloudinary(file: File): Promise<UploadResult> {
+export async function uploadToCloudinary(file: File, folder?: string): Promise<UploadResult> {
   try {
     // Get environment variables
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -251,6 +246,7 @@ export async function uploadToCloudinary(file: File): Promise<UploadResult> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', uploadPreset);
+    if (folder) formData.append('folder', folder);
     // Note: No transformations - they're configured in the upload preset
     // Note: No public_id - Cloudinary will auto-generate a unique one
     // Note: No user context - we'll store that in our database
@@ -286,128 +282,6 @@ export async function uploadToCloudinary(file: File): Promise<UploadResult> {
 }
 
 /**
- * Save image metadata to Supabase with user context
- * This is where we store the relationship between user and uploaded image
- */
-export async function saveImageMetadata(
-  imageUrl: string,
-  publicId: string,
-  metadata: ImageMetadata, 
-  userId: string
-): Promise<{ success: boolean; error?: string }> {
-  try {
-    const response = await fetch('/api/images', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        image_url: imageUrl,
-        public_id: publicId,
-        original_name: metadata.originalName,
-        original_size: metadata.originalSize,
-        optimized_size: metadata.optimizedSize,
-        width: metadata.dimensions.width,
-        height: metadata.dimensions.height,
-        format: metadata.format,
-        user_id: userId, // This is where we store user context
-        uploaded_at: new Date().toISOString(),
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to save image metadata');
-    }
-
-    return { success: true };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Failed to save metadata'
-    };
-  }
-}
-
-/**
- * Complete image upload process with optimization and database storage
- * This is a convenience function that handles the entire workflow
- */
-export async function uploadImage(
-  file: File, 
-  userId: string,
-  options: ImageUploadOptions = {}
-): Promise<UploadResult & { metadata?: ImageMetadata }> {
-  try {
-    // Validate file
-    const validation = validateFile(file);
-    if (!validation.valid) {
-      return { success: false, error: validation.error };
-    }
-
-    // Step 1: Compress image
-    const { file: compressedFile, metadata } = await compressImage(file, options);
-
-    // Step 2: Upload to Cloudinary
-    const uploadResult = await uploadToCloudinary(compressedFile);
-    
-    if (!uploadResult.success) {
-      return uploadResult;
-    }
-
-    // Step 3: Save metadata to Supabase with user context
-    if (uploadResult.url && uploadResult.publicId) {
-      const saveResult = await saveImageMetadata(
-        uploadResult.url, 
-        uploadResult.publicId,
-        metadata, 
-        userId
-      );
-      
-      if (!saveResult.success) {
-        console.warn('Failed to save image metadata:', saveResult.error);
-        // Don't fail the entire upload if metadata save fails
-      }
-    }
-
-    return {
-      ...uploadResult,
-      metadata,
-      optimizedSize: metadata.optimizedSize
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Upload process failed'
-    };
-  }
-}
-
-/**
- * Validate file before upload
- */
-function validateFile(file: File): { valid: boolean; error?: string } {
-    // Check file type
-    if (!file.type.startsWith('image/')) {
-      return { valid: false, error: 'File must be an image' };
-    }
-
-    // Check file size (10MB max for free tier)
-    const maxSize = 10 * 1024 * 1024; // 10MB
-    if (file.size > maxSize) {
-      return { valid: false, error: 'File size must be less than 10MB' };
-    }
-
-    // Check supported formats
-    const supportedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/svg'];
-    if (!supportedFormats.includes(file.type)) {
-      return { valid: false, error: 'Unsupported file format' };
-    }
-
-  return { valid: true };
-}
-
-/**
  * Calculate optimal dimensions maintaining aspect ratio
  */
 function calculateDimensions(
@@ -430,39 +304,6 @@ function calculateDimensions(
     }
 
   return { width: Math.round(width), height: Math.round(height) };
-}
-
-/**
- * Generate optimized Cloudinary URL with transformations
- */
-export function generateOptimizedUrl(
-  publicId: string,
-  options: {
-    width?: number;
-    height?: number;
-    quality?: 'auto' | number;
-    format?: 'auto' | string;
-    crop?: 'fill' | 'fit' | 'scale';
-  } = {}
-): string {
-    const {
-      width = 800,
-      height = 600,
-      quality = 'auto',
-      format = 'auto',
-      crop = 'fit'
-    } = options;
-
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const transformations = [
-      `w_${width}`,
-      `h_${height}`,
-      `c_${crop}`,
-      `q_${quality}`,
-      `f_${format}`
-    ].join(',');
-
-  return `https://res.cloudinary.com/${cloudName}/image/upload/${transformations}/${publicId}`;
 }
 
 /**

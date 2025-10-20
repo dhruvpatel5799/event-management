@@ -3,20 +3,40 @@ import type { BestWish, CreateWishRequest } from '@/app/utils/types';
 
 const supabase = createClient();
 
+const CACHE_KEY = 'wishes_cache';
+const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
+
 /**
  * Fetch all approved wishes
  */
 export async function getWishes(limit = 50, offset = 0): Promise<BestWish[]> {
-    const { data, error } = await supabase
-      .from('best_wishes')
-      .select('*')
-      .eq('is_approved', true)
-      .eq('is_deleted', false)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    // TODO: Improve cache management and invalidation mechanism
+    const cachedData = localStorage.getItem(CACHE_KEY);
+    let cachedWishes: BestWish[] = [];
+    if (cachedData) {
+      const { wishes, timestamp } = JSON.parse(cachedData);
+      if (Date.now() - timestamp < CACHE_TTL) return wishes as BestWish[];
+      cachedWishes = wishes as BestWish[];
+    }
 
-  if (error) throw error;
-  return data || [];
+    try {
+      const { data, error } = await supabase
+        .from('best_wishes')
+        .select('id, text, author, image_url, created_at')
+        .eq('is_approved', true)
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      
+      if (error) throw error;
+  
+      localStorage.setItem(CACHE_KEY, JSON.stringify({ wishes: data as BestWish[], timestamp: Date.now() }));
+      return data as BestWish[] || [];
+    }
+    catch (error) {
+      if (cachedWishes.length > 0) return cachedWishes;
+      throw error;
+    }
 }
 
 /**

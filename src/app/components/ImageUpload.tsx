@@ -1,7 +1,7 @@
 'use client';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
-import { SignedIn, useUser } from '@clerk/nextjs';
+import { SignedIn } from '@clerk/nextjs';
 import { compressImage, uploadToCloudinary, cleanupObjectUrl, type ImageMetadata } from '@/app/services/imageService';
 
 interface UploadedImage {
@@ -31,7 +31,6 @@ export default function ImageUpload({
   acceptedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/svg', 'image/svg+xml'],
   maxSizeKB = 3000 // 3MB for high quality
 }: ImageUploadProps) {
-  const { user } = useUser();
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [duplicateFiles, setDuplicateFiles] = useState<string[]>([]);

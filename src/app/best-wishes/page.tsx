@@ -3,15 +3,9 @@
 import { useState, useEffect } from 'react';
 import { SignedIn, SignedOut, useUser } from '@clerk/nextjs';
 import Image from 'next/image';
-
-interface BestWish {
-  id: string;
-  text: string;
-  author: string;
-  image_url?: string;
-  created_at: string;
-  user_id: string;
-}
+import { getWishes } from '@/app/services/wishService';
+import type { BestWish } from '@/app/utils/types';
+import { compressImage, uploadToCloudinary } from '@/app/services/imageService';
 
 export default function BestWishesWall() {
   const [wishes, setWishes] = useState<BestWish[]>([]);
@@ -24,14 +18,15 @@ export default function BestWishesWall() {
   const { user } = useUser();
 
   useEffect(() => {
+    // TODO: Add pagination to the fetchWishes function
+    // TODO: Add Lazy loading wherever necessary according to the scroll position especially for Images
     fetchWishes();
   }, []);
 
   const fetchWishes = async () => {
     try {
-      const response = await fetch('/api/wishes');
-      const data = await response.json();
-      setWishes(data.wishes);
+      const wishes = await getWishes();
+      setWishes(wishes);
     } catch (error) {
       console.error('Failed to fetch wishes:', error);
     }
@@ -56,10 +51,32 @@ export default function BestWishesWall() {
     setIsSubmitting(true);
   
     try {
+      let cloudinaryUrl: string | undefined = undefined;
+      //let publicId: string | undefined = undefined;
+
+      if (selectedImage) {
+        const { file: compressedFile } = await compressImage(selectedImage, {
+          maxSizeKB: 2048,
+          quality: 0.92,
+          maxWidth: 1024,
+          maxHeight: 1024,
+        });
+
+        const uploadResult = await uploadToCloudinary(compressedFile, 'best-wishes');
+
+        if (!uploadResult.success) {
+          throw new Error(uploadResult.error || 'Image upload failed');
+        }
+
+        cloudinaryUrl = uploadResult.url;
+        //publicId = uploadResult.publicId;
+      }
+      
       const wishData = {
         text: newWish,
         author: authorName || user?.fullName || 'Anonymous',
-        image_url: imagePreview || undefined,
+        image_url: cloudinaryUrl,
+        //image_public_id: publicId,
         image_filename: selectedImage?.name,
         image_size: selectedImage?.size,
       };
@@ -246,9 +263,9 @@ export default function BestWishesWall() {
             <div
               key={wish.id}
               className={`group relative transform transition-all duration-500 hover:scale-105 ${
-                index % 4 === 0 ? 'rotate-1' : 
-                index % 4 === 1 ? '-rotate-1' : 
-                index % 4 === 2 ? 'rotate-2' : '-rotate-2'
+                index % 4 === 0 ? 'md:rotate-1' : 
+                index % 4 === 1 ? 'md:-rotate-1' : 
+                index % 4 === 2 ? 'md:rotate-2' : 'md:-rotate-2'
               } hover:rotate-0`}
               style={{
                 animationDelay: `${index * 100}ms`
@@ -264,6 +281,9 @@ export default function BestWishesWall() {
                       alt="Wish image"
                       fill
                       className="object-cover"
+                      loading="lazy"
+                      placeholder="blur"
+                      blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
                     />
                     {/* Vintage Photo Effect */}
                     <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/10"></div>
@@ -302,11 +322,7 @@ export default function BestWishesWall() {
                     <p className="font-semibold text-gray-900 text-sm">{wish.author}</p>
                     <p className="text-gray-500 text-xs">{formatDate(wish.created_at)}</p>
                   </div>
-                  <div className="text-purple-500">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                    </svg>
-                  </div>
+                  
                 </div>
 
                 {/* Image */}
@@ -317,6 +333,9 @@ export default function BestWishesWall() {
                       alt="Wish image"
                       fill
                       className="object-cover"
+                      loading="lazy"
+                      placeholder="blur"
+                      blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
                     />
                   </div>
                 )}
@@ -324,7 +343,8 @@ export default function BestWishesWall() {
                 {/* Content */}
                 <div className="p-4">
                   <p className="text-gray-800 text-sm leading-relaxed">
-                    <span className="font-semibold">{wish.author}</span> {wish.text}
+                    {wish.text} <br />
+                    <span className="font-semibold">- {wish.author}</span>
                   </p>
                 </div>
 

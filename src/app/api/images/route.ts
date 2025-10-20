@@ -17,6 +17,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       image_url,
+      public_id,
       original_name,
       original_size,
       optimized_size,
@@ -27,9 +28,9 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!image_url || !original_name) {
+    if (!image_url || !original_name || !public_id) {
       return NextResponse.json(
-        { error: 'Missing required fields: image_url and original_name are required' },
+        { error: 'Missing required fields: image_url, original_name, and public_id are required' },
         { status: 400 }
       );
     }
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
       .insert([
         {
           image_url,
+          public_id,
           original_name,
           original_size: original_size || null,
           optimized_size: optimized_size || null,
@@ -136,5 +138,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
-
