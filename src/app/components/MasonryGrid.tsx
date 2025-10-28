@@ -26,33 +26,34 @@ interface ImageData {
   id: number;
   src: string;
   alt: string;
-  height: number;
+  //height: number;
 }
 
 const MasonryGrid = () => {
   // Sample images with different heights for masonry effect
+  
   const images: ImageData[] = [
-    { id: 1, src: img1.src, alt: "Gallery Image 1", height: 400 },
-    { id: 2, src: img2.src, alt: "Gallery Image 2", height: 350 },
-    { id: 3, src: img3.src, alt: "Gallery Image 3", height: 450 },
-    { id: 4, src: img4.src, alt: "Gallery Image 4", height: 300 },
-    { id: 5, src: img5.src, alt: "Gallery Image 5", height: 380 },
-    { id: 6, src: img6.src, alt: "Gallery Image 6", height: 420 },
-    { id: 7, src: img7.src, alt: "Gallery Image 7", height: 360 },
-    { id: 8, src: img8.src, alt: "Gallery Image 8", height: 480 },
-    { id: 9, src: img9.src, alt: "Gallery Image 9", height: 340 },
-    { id: 10, src: img10.src, alt: "Gallery Image 10", height: 460 },
-    { id: 11, src: img11.src, alt: "Gallery Image 11", height: 320 },
-    { id: 12, src: img12.src, alt: "Gallery Image 12", height: 440 },
-    { id: 13, src: img13.src, alt: "Gallery Image 12", height: 440 },
-    { id: 14, src: img14.src, alt: "Gallery Image 13", height: 440 },
-    { id: 15, src: img15.src, alt: "Gallery Image 14", height: 440 },
-    { id: 16, src: img16.src, alt: "Gallery Image 15", height: 440 },
-    { id: 17, src: img17.src, alt: "Gallery Image 16", height: 440 },
-    { id: 18, src: img18.src, alt: "Gallery Image 17", height: 440 },
-    { id: 19, src: img19.src, alt: "Gallery Image 18", height: 440 },
-    { id: 20, src: img20.src, alt: "Gallery Image 19", height: 440 },
-    { id: 21, src: img21.src, alt: "Gallery Image 20", height: 440 },
+    { id: 1, src: img1.src, alt: "Gallery Image 1" },
+    { id: 2, src: img2.src, alt: "Gallery Image 2" },
+    { id: 3, src: img3.src, alt: "Gallery Image 3" },
+    { id: 4, src: img4.src, alt: "Gallery Image 4" },
+    { id: 5, src: img5.src, alt: "Gallery Image 5" },
+    { id: 6, src: img6.src, alt: "Gallery Image 6" },
+    { id: 7, src: img7.src, alt: "Gallery Image 7" },
+    { id: 8, src: img8.src, alt: "Gallery Image 8" },
+    { id: 9, src: img9.src, alt: "Gallery Image 9" },
+    { id: 10, src: img10.src, alt: "Gallery Image 10" },
+    { id: 11, src: img11.src, alt: "Gallery Image 11" },
+    { id: 12, src: img12.src, alt: "Gallery Image 12" },
+    { id: 13, src: img13.src, alt: "Gallery Image 13" },
+    { id: 14, src: img14.src, alt: "Gallery Image 14" },
+    { id: 15, src: img15.src, alt: "Gallery Image 15" },
+    { id: 16, src: img16.src, alt: "Gallery Image 16" },
+    { id: 17, src: img17.src, alt: "Gallery Image 17" },
+    { id: 18, src: img18.src, alt: "Gallery Image 18" },
+    { id: 19, src: img19.src, alt: "Gallery Image 19" },
+    { id: 20, src: img20.src, alt: "Gallery Image 20" },
+    { id: 21, src: img21.src, alt: "Gallery Image 21" },
   ];
 
      return (
