@@ -2,13 +2,13 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { SignedIn } from '@clerk/nextjs';
-import { compressImage, uploadToCloudinary, cleanupObjectUrl, type ImageMetadata } from '@/app/services/imageService';
+import { uploadToCloudinary, cleanupObjectUrl, ImageMetadata } from '@/app/services/imageService';
 
 interface UploadedImage {
   id: string;
   file: File;
   preview: string;
-  status: 'pending' | 'compressing' | 'uploading' | 'success' | 'error';
+  status: 'pending' | 'uploading' | 'success' | 'error';
   progress: number;
   fileName: string;
   fileSize: number;
@@ -22,14 +22,12 @@ interface ImageUploadProps {
   onUploadComplete?: (images: UploadedImage[]) => void;
   maxFiles?: number;
   acceptedFormats?: string[];
-  maxSizeKB?: number;
 }
 
 export default function ImageUpload({ 
   onUploadComplete,
   maxFiles = 10,
   acceptedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/svg', 'image/svg+xml'],
-  maxSizeKB = 3000 // 3MB for high quality
 }: ImageUploadProps) {
   const [uploadedImages, setUploadedImages] = useState<UploadedImage[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -146,34 +144,13 @@ export default function ImageUpload({
 
   const uploadSingleImage = useCallback(async (imageData: UploadedImage) => {
     try {
-      // Step 1: Compression (or skip if under 2MB)
-      const fileSizeMB = imageData.file.size / (1024 * 1024);
-      const willCompress = fileSizeMB >= 2;
-      
-      updateImageStatus(imageData.id, { 
-        status: willCompress ? 'compressing' : 'uploading', 
-        progress: willCompress ? 10 : 20 
-      });
-      
-      const { file: compressedFile, metadata } = await compressImage(
-        imageData.file,
-        { 
-          maxSizeKB, 
-          quality: 0.92,      // High quality for modern content
-          maxWidth: 2560,     // Support higher resolutions
-          maxHeight: 1440     // Support higher resolutions
-        }
-      );
-
       updateImageStatus(imageData.id, { 
         status: 'uploading', 
-        progress: 30,
-        optimizedSize: compressedFile.size,
-        metadata 
+        progress: 10 
       });
 
-      // Step 2: Upload directly to Cloudinary (bypassing Vercel)
-      const uploadResult = await uploadToCloudinary(compressedFile);
+      // Step 2: Upload directly to Cloudinary (upload preset handles optimization)
+      const uploadResult = await uploadToCloudinary(imageData.file);
 
       if (!uploadResult.success) {
         throw new Error(uploadResult.error || 'Upload failed');
@@ -183,6 +160,7 @@ export default function ImageUpload({
         status: 'success', 
         progress: 100,
         url: uploadResult.url,
+        optimizedSize: uploadResult.optimizedSize,
         error: undefined
       });
 
@@ -194,7 +172,7 @@ export default function ImageUpload({
         error: errorMessage 
       });
     }
-  }, [maxSizeKB, updateImageStatus]);
+  }, [updateImageStatus]);
 
   const handleFileChange = useCallback(async (files: FileList | null) => {
     if (!files) return;
@@ -254,7 +232,7 @@ export default function ImageUpload({
 
   // Computed values
   const isAnyProcessing = uploadedImages.some(img => 
-    ['pending', 'compressing', 'uploading'].includes(img.status)
+    ['pending', 'uploading'].includes(img.status)
   );
   const successCount = uploadedImages.filter(img => img.status === 'success').length;
   const errorCount = uploadedImages.filter(img => img.status === 'error').length;
@@ -390,7 +368,7 @@ export default function ImageUpload({
                 </button>
 
                 <p className="text-xs text-gray-400 mt-4">
-                  Supports JPG, PNG, GIF up to 05MB each
+                  Supports JPG, PNG, GIF up to 10MB each
                 </p>
               </div>
             ) : (
@@ -432,13 +410,12 @@ export default function ImageUpload({
                       />
 
                       {/* Upload Status Overlay */}
-                      {['pending', 'compressing', 'uploading'].includes(image.status) && (
+                      {['pending', 'uploading'].includes(image.status) && (
                         <div className="absolute inset-0 bg-gray-900 bg-opacity-60 flex items-center justify-center">
                           <div className="text-center text-white">
                             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mx-auto mb-2"></div>
                             <div className="text-xs font-medium">
-                              {image.status === 'compressing' ? 'Optimizing...' : 
-                               image.status === 'uploading' ? 'Uploading...' : 'Processing...'}
+                              {image.status === 'uploading' ? 'Uploading...' : 'Processing...'}
                             </div>
                             <div className="text-xs opacity-75">
                               {image.progress}%
@@ -480,7 +457,7 @@ export default function ImageUpload({
                     {/* Remove Button */}
                     <button
                       onClick={() => removeImage(image.id)}
-                      disabled={['compressing', 'uploading'].includes(image.status)}
+                      disabled={['uploading'].includes(image.status)}
                       className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 opacity-50 group-hover:opacity-100 transition-opacity duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
