@@ -149,7 +149,7 @@ export default function ImageUpload({
         progress: 10 
       });
 
-      // Step 2: Upload directly to Cloudinary (upload preset handles optimization)
+      // Step 1: Upload directly to Cloudinary (upload preset handles optimization)
       const uploadResult = await uploadToCloudinary(imageData.file);
 
       if (!uploadResult.success) {
@@ -157,12 +157,35 @@ export default function ImageUpload({
       }
 
       updateImageStatus(imageData.id, { 
-        status: 'success', 
-        progress: 100,
+        status: 'uploading', 
+        progress: 50,
         url: uploadResult.url,
         optimizedSize: uploadResult.optimizedSize,
         error: undefined
       });
+
+      // Step 2: Save image data to supabase
+      const imageMetadata = {
+        image_url: uploadResult.url,
+        public_id: uploadResult.publicId,
+      }
+
+      const response = await fetch('/api/images', {
+        method: 'POST',
+        body: JSON.stringify(imageMetadata),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save image metadata');
+      }
+
+      updateImageStatus(imageData.id, {
+        status: 'success',
+        progress: 100,
+        url: uploadResult.url,
+        error: undefined
+      })
+      
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Upload failed';
