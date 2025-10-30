@@ -64,7 +64,6 @@ export async function createAdminClient() {
         headers: {
           // Include Clerk user ID for audit trails, even in admin operations
           ...(userId ? { "x-clerk-user-id": userId } : {}),
-          // You could add additional admin-specific headers here
           "x-client-type": "admin"
         },
       },
