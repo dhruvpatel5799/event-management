@@ -13,6 +13,7 @@ interface CloudinaryOptions {
 export interface GalleryImage {
   id: string;
   image_url: string;
+  uploaded_at: string;
 }
 
 const supabase = createClient();
@@ -61,8 +62,8 @@ export function generateThumbnailUrl(
     options: CloudinaryOptions = {}
   ): string {
     const transformation = buildTransformation({
-      width: options.width ?? 400,
-      height: options.height ?? 400,
+      width: options.width,
+      height: options.height,
       crop: options.crop ?? 'fill',
       gravity: options.gravity ?? 'auto',
       quality: options.quality ?? 'auto:low', // slightly more aggressive for thumbnails
@@ -89,7 +90,7 @@ export function generateFullImageUrl(imageUrl: string): string {
 export async function getGalleryImages(limit = 20, offset = 0): Promise<GalleryImage[]> {
   const { data, error } = await supabase
     .from('uploaded_images')
-    .select('id, image_url')
+    .select('id, image_url, uploaded_at')
     .eq('is_deleted', false)
     .order('uploaded_at', { ascending: false })
     .range(offset, offset + limit - 1);
@@ -104,7 +105,7 @@ export async function getGalleryImages(limit = 20, offset = 0): Promise<GalleryI
 export async function getUserImages(userId: string): Promise<GalleryImage[]> {
   const { data, error } = await supabase
     .from('uploaded_images')
-    .select('id, image_url')
+    .select('id, image_url, uploaded_at')
     .eq('user_id', userId)
     .eq('is_deleted', false)
     .order('uploaded_at', { ascending: false });

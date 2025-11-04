@@ -23,6 +23,7 @@ import img20 from '@/app/pics/20.jpg';
 import img21 from '@/app/pics/21.jpg';
 import Image from 'next/image';
 import { getGalleryImages, generateThumbnailUrl, type GalleryImage } from '@/app/services/galleryService';
+import ImageFeedModal from '@/app/components/ImageFeedModal';
 
 interface ImageData {
   id: string;
@@ -58,7 +59,9 @@ const MasonryGrid = () => {
   ];
 
   const [images, setImages] = useState<ImageData[]>(staticImages);
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  
   // Fetch database images silently in the background
   useEffect(() => {  
     fetchDatabaseImages();
@@ -71,11 +74,8 @@ const MasonryGrid = () => {
       // Transform database images to ImageData format with optimized thumbnails
       const transformedDbImages: ImageData[] = dbImages.map((img: GalleryImage) => ({
         id: img.id,
-        src: generateThumbnailUrl(img.image_url, { 
-          width: 400, 
-          height: 400, 
-          quality: 'auto:low' 
-        }),
+        src: generateThumbnailUrl(img.image_url),
+        uploaded_at: img.uploaded_at,
         alt: `Gallery Image ${img.id}`,
         isStatic: false
       }));
@@ -88,12 +88,18 @@ const MasonryGrid = () => {
     }
   };
 
+  const handleImageClick = (index: number) => {
+    setSelectedImageIndex(index);
+    setIsModalOpen(true);
+  };
+
   return (
+    <>
     <div
       className="columns-3 lg:columns-5"
       style={{ columnGap: '.25rem' }}
     >
-      {images.map((image) => (
+      {images.map((image, index) => (
         <div key={image.id} className="mb-1">
           <Image
             className="h-auto w-full rounded-lg"
@@ -104,10 +110,20 @@ const MasonryGrid = () => {
             loading={image.isStatic ? "eager" : "lazy"} // Load static images immediately, lazy load DB images
             placeholder="blur"
             blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9InNoaW1tZXIiIHgxPSIwJSIgeTE9IjAlIiB4Mj0iMTAwJSIgeTI9IjAlIj48c3RvcCBvZmZzZXQ9IjAlIiBzdG9wLWNvbG9yPSIjZjNmNGY2Ii8+PHN0b3Agb2Zmc2V0PSI1MCUiIHN0b3AtY29sb3I9IiNlNWU3ZWIiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiNmM2Y0ZjYiLz48L2xpbmVhckdyYWRpZW50PjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI3NoaW1tZXIpIi8+PC9zdmc+"
+            onClick={() => handleImageClick(index)}
           />
         </div>
       ))}
     </div>
+
+    {/* Instagram-like Feed Modal */}
+    <ImageFeedModal
+    isOpen={isModalOpen}
+    onClose={() => setIsModalOpen(false)}
+    initialImageIndex={selectedImageIndex}
+    allImages={images}
+  />
+</>
   );
 };
 
