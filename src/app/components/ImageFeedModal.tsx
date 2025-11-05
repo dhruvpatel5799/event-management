@@ -14,6 +14,7 @@ interface ImageFeedModalProps {
     alt: string;
     isStatic?: boolean;
   }>;
+  onImageChange: (newIndex: number) => void;
 }
 
 interface FeedImage extends GalleryImage {
@@ -28,7 +29,7 @@ const CloseIcon = () => (
   </svg>
 );
 
-export default function ImageFeedModal({ isOpen, onClose, initialImageIndex, allImages }: ImageFeedModalProps) {
+export default function ImageFeedModal({ isOpen, onClose, initialImageIndex, allImages, onImageChange }: ImageFeedModalProps) {
   const [currentIndex, setCurrentIndex] = useState(initialImageIndex);
   const [feedImages, setFeedImages] = useState<FeedImage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -36,9 +37,13 @@ export default function ImageFeedModal({ isOpen, onClose, initialImageIndex, all
   const containerRef = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState(0);
 
+  useEffect(() => {
+    setCurrentIndex(initialImageIndex);
+  }, [initialImageIndex]);
+
   // Convert initial images to feed format
   const convertToFeedImages = useCallback((images: typeof allImages): FeedImage[] => {
-    return images.map((img, index) => ({
+    return images.map((img) => ({
       id: img.id,
       image_url: img.src,
       username: 'Event Gallery',
@@ -86,11 +91,25 @@ export default function ImageFeedModal({ isOpen, onClose, initialImageIndex, all
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
     
-    const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
+    const container = containerRef.current;
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    
+    // Load more images when near bottom
     if (scrollHeight - scrollTop <= clientHeight * 1.5) {
       loadMoreImages();
     }
-  }, [loadMoreImages]);
+  
+    // Update current index based on scroll position
+    const newIndex = Math.round(scrollTop / clientHeight);
+    if (newIndex !== currentIndex && newIndex >= 0 && newIndex < feedImages.length) {
+      setCurrentIndex(newIndex);
+      
+      // Only call onImageChange if the index is valid
+      if (onImageChange && newIndex < allImages.length) {
+        onImageChange(newIndex);
+      }
+    }
+  }, [loadMoreImages, currentIndex, feedImages.length, onImageChange, allImages.length]);
 
   // Scroll to the selected image when modal opens
 useEffect(() => {
@@ -116,17 +135,31 @@ useEffect(() => {
       if (e.key === 'Escape') {
         onClose();
       } else if (e.key === 'ArrowUp' && currentIndex > 0) {
-        setCurrentIndex(prev => prev - 1);
-        containerRef.current?.children[currentIndex - 1]?.scrollIntoView({ behavior: 'smooth' });
+        const newIndex = currentIndex - 1;
+        setCurrentIndex(newIndex);
+        if (containerRef.current) {
+          containerRef.current.scrollTop = newIndex * window.innerHeight;
+        }
+        // Update URL
+        if (onImageChange) {
+          onImageChange(newIndex);
+        }
       } else if (e.key === 'ArrowDown' && currentIndex < feedImages.length - 1) {
-        setCurrentIndex(prev => prev + 1);
-        containerRef.current?.children[currentIndex + 1]?.scrollIntoView({ behavior: 'smooth' });
+        const newIndex = currentIndex + 1;
+        setCurrentIndex(newIndex);
+        if (containerRef.current) {
+          containerRef.current.scrollTop = newIndex * window.innerHeight;
+        }
+        // Update URL
+        if (onImageChange) {
+          onImageChange(newIndex);
+        }
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [isOpen, currentIndex, feedImages.length, onClose]);
+  }, [isOpen, currentIndex, feedImages.length, onClose, onImageChange]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {

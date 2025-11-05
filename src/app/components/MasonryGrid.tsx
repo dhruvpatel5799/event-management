@@ -24,6 +24,7 @@ import img21 from '@/app/pics/21.jpg';
 import Image from 'next/image';
 import { getGalleryImages, generateThumbnailUrl, type GalleryImage } from '@/app/services/galleryService';
 import ImageFeedModal from '@/app/components/ImageFeedModal';
+import { useSearchParams,  } from 'next/navigation';
 
 interface ImageData {
   id: string;
@@ -33,6 +34,7 @@ interface ImageData {
 }
 
 const MasonryGrid = () => {
+  const searchParams = useSearchParams();
   // Static images as initial content
   const staticImages: ImageData[] = [
     { id: 'static-1', src: img1.src, alt: "Gallery Image 1", isStatic: true },
@@ -62,6 +64,54 @@ const MasonryGrid = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   
+  useEffect(() => {
+    const imageId = searchParams.get('image');
+    
+    if (imageId && images.length > 0) {
+      const actualIndex = images.findIndex(img => img.id === imageId);
+      
+      if (actualIndex !== -1) {
+        setSelectedImageIndex(actualIndex);
+        setIsModalOpen(true);
+        
+        // Always ensure URL has correct index
+        const currentUrlIndex = searchParams.get('index');
+        if (!currentUrlIndex || parseInt(currentUrlIndex) !== actualIndex) {
+          const correctedUrl = `${window.location.pathname}?image=${imageId}&index=${actualIndex}`;
+          window.history.replaceState(null, '', correctedUrl);
+        }
+      } else {
+        // Image not found, clean up URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState(null, '', newUrl);
+        setIsModalOpen(false);
+      }
+    }
+  }, [searchParams, images]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const imageId = urlParams.get('image');
+      const index = urlParams.get('index');
+      
+      if (!imageId || !index) {
+        // No params means modal should be closed
+        setIsModalOpen(false);
+      } else {
+        // Update modal state based on URL
+        const imageIndex = parseInt(index);
+        if (imageIndex >= 0 && imageIndex < images.length) {
+          setSelectedImageIndex(imageIndex);
+          setIsModalOpen(true);
+        }
+      }
+    };
+  
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [images.length]);
+
   // Fetch database images silently in the background
   useEffect(() => {  
     fetchDatabaseImages();
@@ -74,7 +124,7 @@ const MasonryGrid = () => {
       // Transform database images to ImageData format with optimized thumbnails
       const transformedDbImages: ImageData[] = dbImages.map((img: GalleryImage) => ({
         id: img.id,
-        src: generateThumbnailUrl(img.image_url),
+        src: img.image_url,
         uploaded_at: img.uploaded_at,
         alt: `Gallery Image ${img.id}`,
         isStatic: false
@@ -89,8 +139,32 @@ const MasonryGrid = () => {
   };
 
   const handleImageClick = (index: number) => {
+    const imageId = images[index].id;
     setSelectedImageIndex(index);
     setIsModalOpen(true);
+    
+    // Update URL when opening modal
+    const newUrl = `${window.location.pathname}?image=${imageId}&index=${index}`;
+    window.history.pushState(null, '', newUrl);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    
+    // Remove URL params when closing modal
+    const newUrl = window.location.pathname;
+    window.history.pushState(null, '', newUrl);
+  };
+
+  // Add function to handle image change in modal
+  const handleImageChange = (newIndex: number) => {
+    if (newIndex >= 0 && newIndex < images.length) {
+      const imageId = images[newIndex].id;
+      setSelectedImageIndex(newIndex);
+      
+      const newUrl = `${window.location.pathname}?image=${imageId}&index=${newIndex}`;
+      window.history.replaceState(null, '', newUrl);
+    }
   };
 
   return (
@@ -103,7 +177,7 @@ const MasonryGrid = () => {
         <div key={image.id} className="mb-1">
           <Image
             className="h-auto w-full rounded-lg"
-            src={image.src}
+            src={generateThumbnailUrl(image.src)}
             alt={image.alt}
             width={200}
             height={200}
@@ -119,9 +193,10 @@ const MasonryGrid = () => {
     {/* Instagram-like Feed Modal */}
     <ImageFeedModal
     isOpen={isModalOpen}
-    onClose={() => setIsModalOpen(false)}
+    onClose={handleModalClose}
     initialImageIndex={selectedImageIndex}
     allImages={images}
+    onImageChange={handleImageChange}
   />
 </>
   );
