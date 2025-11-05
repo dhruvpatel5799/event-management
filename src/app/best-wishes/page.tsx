@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SignedIn, SignedOut, useUser } from '@clerk/nextjs';
+import { SignedIn, SignedOut, useUser, useClerk } from '@clerk/nextjs';
 import Image from 'next/image';
 import { getWishes } from '@/app/services/wishService';
 import type { BestWish } from '@/app/utils/types';
@@ -17,6 +17,7 @@ export default function BestWishesWall() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const { user } = useUser();
+  const { openSignIn } = useClerk();
 
   useEffect(() => {
     // TODO: Add pagination to the fetchWishes function
@@ -237,7 +238,7 @@ export default function BestWishesWall() {
             </div>
             <h3 className="text-2xl font-bold text-gray-800 mb-2">Share Your Love</h3>
             <p className="text-gray-600 mb-6">Sign in to share your best wishes for the happy couple</p>
-            <button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 rounded-full font-semibold shadow-lg transform hover:scale-105 transition-all duration-300">
+            <button onClick={() => openSignIn()} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 rounded-full font-semibold shadow-lg transform hover:scale-105 transition-all duration-300">
               Sign In to Post
             </button>
           </div>
