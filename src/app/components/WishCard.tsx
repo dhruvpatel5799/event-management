@@ -1,8 +1,26 @@
-import { memo, useCallback } from "react";
+import { memo, useCallback, useState } from "react";
 import { BestWish } from "../utils/types";
 import Image from "next/image";
+import { deleteWish } from "../services/wishService";
+import { generateThumbnailUrl } from "@/app/services/galleryService";
 
-export default memo(function WishCard({ wish, index }: { wish: BestWish; index: number }) {
+interface WishCardProps {
+  wish: BestWish;
+  index: number;
+  currentUserId?: string;
+  isModerator?: boolean;
+  onDelete?: (wishId: string) => void;
+}
+
+export default memo(function WishCard({ 
+  wish, 
+  index, 
+  currentUserId = '',
+  isModerator = false,
+  onDelete 
+}: WishCardProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const formatDate = useCallback((dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', { 
       month: 'short', 
@@ -10,6 +28,30 @@ export default memo(function WishCard({ wish, index }: { wish: BestWish; index: 
       year: 'numeric'
     });
   }, []);
+
+  // Check if current user can delete this wish
+  const canDelete = currentUserId && (currentUserId === wish.user_id || isModerator);
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this wish?')) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await deleteWish(wish.id);
+      
+      // Call parent callback to update UI
+      if (onDelete) {
+        onDelete(wish.id);
+      }
+    } catch (error) {
+      console.error('Failed to delete wish:', error);
+      alert('Failed to delete wish. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div
@@ -25,11 +67,32 @@ export default memo(function WishCard({ wish, index }: { wish: BestWish; index: 
     >
       {/* Desktop: Polaroid/Postcard Style */}
       <div className="hidden md:block bg-white rounded-lg shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border-4 border-white">
+        {/* Delete Button - Desktop */}
+        {canDelete && (
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="absolute top-2 right-2 z-10 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white p-2 rounded-full shadow-lg transition-all duration-200 opacity-0 group-hover:opacity-100"
+            title="Delete wish"
+          >
+            {isDeleting ? (
+              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            )}
+          </button>
+        )}
+
         {/* Image Section */}
         {wish.image_url && (
           <div className="relative h-48 bg-gray-100">
             <Image
-              src={wish.image_url}
+              src={generateThumbnailUrl(wish.image_url)}
               alt="Wish image"
               fill
               className="object-cover"
@@ -73,6 +136,26 @@ export default memo(function WishCard({ wish, index }: { wish: BestWish; index: 
             <p className="text-gray-500 text-xs">{formatDate(wish.created_at)}</p>
           </div>
           
+          {/* Delete Button - Mobile */}
+          {canDelete && (
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white p-2 rounded-full shadow-md transition-all duration-200"
+              title="Delete wish"
+            >
+              {isDeleting ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              )}
+            </button>
+          )}
         </div>
         {/* Image */}
         {wish.image_url && (
@@ -94,19 +177,6 @@ export default memo(function WishCard({ wish, index }: { wish: BestWish; index: 
             {wish.text} <br />
             <span className="font-semibold">- {wish.author}</span>
           </p>
-        </div>
-        {/* Actions */}
-        <div className="px-4 pb-4 flex items-center space-x-4">
-          <button className="text-purple-500 hover:text-purple-600 transition-colors">
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-            </svg>
-          </button>
-          <button className="text-gray-600 hover:text-gray-800 transition-colors">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-          </button>
         </div>
       </div>
     </div>

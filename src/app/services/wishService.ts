@@ -1,5 +1,5 @@
 import { createClient } from '@/app/database/supabase/client';
-import type { BestWish, CreateWishRequest } from '@/app/utils/types';
+import type { BestWish } from '@/app/utils/types';
 
 const supabase = createClient();
 
@@ -22,7 +22,7 @@ export async function getWishes(limit = 50, offset = 0): Promise<BestWish[]> {
     try {
       const { data, error } = await supabase
         .from('best_wishes')
-        .select('id, text, author, image_url, created_at')
+        .select('id, text, author, image_url, created_at, user_id')
         .eq('is_approved', true)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false })
@@ -37,20 +37,6 @@ export async function getWishes(limit = 50, offset = 0): Promise<BestWish[]> {
       if (cachedWishes.length > 0) return cachedWishes;
       throw error;
     }
-}
-
-/**
- * Create a new wish
- */
-export async function createWish(wish: CreateWishRequest): Promise<BestWish> {
-    const { data, error } = await supabase
-      .from('best_wishes')
-      .insert([wish])
-      .select()
-      .single();
-
-  if (error) throw error;
-  return data;
 }
 
 /**
@@ -87,10 +73,27 @@ export async function updateWish(id: string, updates: Partial<BestWish>): Promis
  * Soft delete wish
  */
 export async function deleteWish(id: string): Promise<void> {
-    const { error } = await supabase
-      .from('best_wishes')
-      .update({ is_deleted: true })
-      .eq('id', id);
+  try {
+    const response = await fetch('/api/wishes', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: id,
+        is_deleted: true
+      }),
+    });
 
-  if (error) throw error;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to delete wish');
+    }
+
+    // Clear cache after successful deletion
+    localStorage.removeItem(CACHE_KEY);
+  } catch (error) {
+    console.error('Error deleting wish:', error);
+    throw error;
+  }
 }
