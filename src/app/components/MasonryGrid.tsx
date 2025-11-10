@@ -27,7 +27,7 @@ import ImageFeedModal from '@/app/components/ImageFeedModal';
 import { useSearchParams,  } from 'next/navigation';
 
 interface ImageData {
-  id: string;
+  public_id: string;
   src: string;
   alt: string;
   isStatic?: boolean;
@@ -37,27 +37,27 @@ const MasonryGrid = () => {
   const searchParams = useSearchParams();
   // Static images as initial content
   const staticImages: ImageData[] = [
-    { id: 'static-1', src: img1.src, alt: "Gallery Image 1", isStatic: true },
-    { id: 'static-2', src: img2.src, alt: "Gallery Image 2", isStatic: true },
-    { id: 'static-3', src: img3.src, alt: "Gallery Image 3", isStatic: true },
-    { id: 'static-4', src: img4.src, alt: "Gallery Image 4", isStatic: true },
-    { id: 'static-5', src: img5.src, alt: "Gallery Image 5", isStatic: true },
-    { id: 'static-6', src: img6.src, alt: "Gallery Image 6", isStatic: true },
-    { id: 'static-7', src: img7.src, alt: "Gallery Image 7", isStatic: true },
-    { id: 'static-8', src: img8.src, alt: "Gallery Image 8", isStatic: true },
-    { id: 'static-9', src: img9.src, alt: "Gallery Image 9", isStatic: true },
-    { id: 'static-10', src: img10.src, alt: "Gallery Image 10", isStatic: true },
-    { id: 'static-11', src: img11.src, alt: "Gallery Image 11", isStatic: true },
-    { id: 'static-12', src: img12.src, alt: "Gallery Image 12", isStatic: true },
-    { id: 'static-13', src: img13.src, alt: "Gallery Image 13", isStatic: true },
-    { id: 'static-14', src: img14.src, alt: "Gallery Image 14", isStatic: true },
-    { id: 'static-15', src: img15.src, alt: "Gallery Image 15", isStatic: true },
-    { id: 'static-16', src: img16.src, alt: "Gallery Image 16", isStatic: true },
-    { id: 'static-17', src: img17.src, alt: "Gallery Image 17", isStatic: true },
-    { id: 'static-18', src: img18.src, alt: "Gallery Image 18", isStatic: true },
-    { id: 'static-19', src: img19.src, alt: "Gallery Image 19", isStatic: true },
-    { id: 'static-20', src: img20.src, alt: "Gallery Image 20", isStatic: true },
-    { id: 'static-21', src: img21.src, alt: "Gallery Image 21", isStatic: true },
+    { public_id: 'static-1', src: img1.src, alt: "Gallery Image 1", isStatic: true },
+    { public_id: 'static-2', src: img2.src, alt: "Gallery Image 2", isStatic: true },
+    { public_id: 'static-3', src: img3.src, alt: "Gallery Image 3", isStatic: true },
+    { public_id: 'static-4', src: img4.src, alt: "Gallery Image 4", isStatic: true },
+    { public_id: 'static-5', src: img5.src, alt: "Gallery Image 5", isStatic: true },
+    { public_id: 'static-6', src: img6.src, alt: "Gallery Image 6", isStatic: true },
+    { public_id: 'static-7', src: img7.src, alt: "Gallery Image 7", isStatic: true },
+    { public_id: 'static-8', src: img8.src, alt: "Gallery Image 8", isStatic: true },
+    { public_id: 'static-9', src: img9.src, alt: "Gallery Image 9", isStatic: true },
+    { public_id: 'static-10', src: img10.src, alt: "Gallery Image 10", isStatic: true },
+    { public_id: 'static-11', src: img11.src, alt: "Gallery Image 11", isStatic: true },
+    { public_id: 'static-12', src: img12.src, alt: "Gallery Image 12", isStatic: true },
+    { public_id: 'static-13', src: img13.src, alt: "Gallery Image 13", isStatic: true },
+    { public_id: 'static-14', src: img14.src, alt: "Gallery Image 14", isStatic: true },
+    { public_id: 'static-15', src: img15.src, alt: "Gallery Image 15", isStatic: true },
+    { public_id: 'static-16', src: img16.src, alt: "Gallery Image 16", isStatic: true },
+    { public_id: 'static-17', src: img17.src, alt: "Gallery Image 17", isStatic: true },
+    { public_id: 'static-18', src: img18.src, alt: "Gallery Image 18", isStatic: true },
+    { public_id: 'static-19', src: img19.src, alt: "Gallery Image 19", isStatic: true },
+    { public_id: 'static-20', src: img20.src, alt: "Gallery Image 20", isStatic: true },
+    { public_id: 'static-21', src: img21.src, alt: "Gallery Image 21", isStatic: true },
   ];
 
   const [images, setImages] = useState<ImageData[]>(staticImages);
@@ -68,7 +68,7 @@ const MasonryGrid = () => {
     const imageId = searchParams.get('image');
     
     if (imageId && images.length > 0) {
-      const actualIndex = images.findIndex(img => img.id === imageId);
+      const actualIndex = images.findIndex(img => img.public_id === imageId);
       
       if (actualIndex !== -1) {
         setSelectedImageIndex(actualIndex);
@@ -123,10 +123,10 @@ const MasonryGrid = () => {
       
       // Transform database images to ImageData format with optimized thumbnails
       const transformedDbImages: ImageData[] = dbImages.map((img: GalleryImage) => ({
-        id: img.id,
+        public_id: img.public_id,
         src: img.image_url,
         uploaded_at: img.uploaded_at,
-        alt: `Gallery Image ${img.id}`,
+        alt: `Gallery Image ${img.public_id}`,
         isStatic: false
       }));
 
@@ -139,7 +139,7 @@ const MasonryGrid = () => {
   };
 
   const handleImageClick = (index: number) => {
-    const imageId = images[index].id;
+    const imageId = images[index].public_id;
     setSelectedImageIndex(index);
     setIsModalOpen(true);
     
@@ -159,7 +159,7 @@ const MasonryGrid = () => {
   // Add function to handle image change in modal
   const handleImageChange = (newIndex: number) => {
     if (newIndex >= 0 && newIndex < images.length) {
-      const imageId = images[newIndex].id;
+      const imageId = images[newIndex].public_id;
       setSelectedImageIndex(newIndex);
       
       const newUrl = `${window.location.pathname}?image=${imageId}&index=${newIndex}`;
@@ -174,7 +174,7 @@ const MasonryGrid = () => {
       style={{ columnGap: '.25rem' }}
     >
       {images.map((image, index) => (
-        <div key={image.id} className="mb-1">
+        <div key={image.public_id} className="mb-1">
           <Image
             className="h-auto w-full rounded-lg"
             src={generateThumbnailUrl(image.src)}

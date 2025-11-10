@@ -4,6 +4,8 @@ import Image from 'next/image';
 import { SignedIn } from '@clerk/nextjs';
 import { uploadToCloudinary, cleanupObjectUrl, ImageMetadata } from '@/app/services/imageService';
 
+import MosaicGrid from './MosaicGrid';
+
 interface UploadedImage {
   id: string;
   file: File;
@@ -19,13 +21,11 @@ interface UploadedImage {
 }
 
 interface ImageUploadProps {
-  onUploadComplete?: (images: UploadedImage[]) => void;
   maxFiles?: number;
   acceptedFormats?: string[];
 }
 
 export default function ImageUpload({ 
-  onUploadComplete,
   maxFiles = 10,
   acceptedFormats = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/svg', 'image/svg+xml'],
 }: ImageUploadProps) {
@@ -35,6 +35,7 @@ export default function ImageUpload({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [refreshGridTrigger, setRefreshGridTrigger] = useState(0);
 
   // Cleanup object URLs on unmount
   useEffect(() => {
@@ -127,12 +128,6 @@ export default function ImageUpload({
       await Promise.all(newImages.map(imageData => uploadSingleImage(imageData)));
       
       setIsUploading(false);
-      
-      // Notify parent component
-      if (onUploadComplete) {
-        const successfulImages = uploadedImages.filter(img => img.status === 'success');
-        onUploadComplete(successfulImages);
-      }
     }
 
     // Reset file input
@@ -140,7 +135,7 @@ export default function ImageUpload({
       fileInputRef.current.value = '';
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uploadedImages, maxFiles, acceptedFormats, onUploadComplete]);
+  }, [uploadedImages, maxFiles, acceptedFormats]);
 
   const uploadSingleImage = useCallback(async (imageData: UploadedImage) => {
     try {
@@ -185,7 +180,7 @@ export default function ImageUpload({
         url: uploadResult.url,
         error: undefined
       })
-      
+      setRefreshGridTrigger(prev => prev + 1);
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Upload failed';
@@ -276,7 +271,7 @@ export default function ImageUpload({
 
   return (
     <SignedIn>
-      <div className="p-4">
+      <div className="p-4 mb-12">
         <div className="max-w-2xl mx-auto p-6 bg-white rounded-xl shadow-lg border border-gray-200">
           {/* Header */}
           <div className="text-center mb-6">
@@ -523,15 +518,23 @@ export default function ImageUpload({
                 </button>
 
                 <button
-                  disabled={isAnyProcessing || successCount === 0}
-                  onClick={() => onUploadComplete?.(uploadedImages.filter(img => img.status === 'success'))}
+                  disabled={isAnyProcessing || uploadedImages.length >= maxFiles}
+                  onClick={openFileDialog}
                   className="px-8 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-full transition-all duration-300 font-semibold"
                 >
-                  {isAnyProcessing ? 'Processing...' : `Share ${successCount} Photo${successCount !== 1 ? 's' : ''}`}
+                  {uploadedImages.length >= maxFiles ? 'Maximum Reached' : 'Upload More'}
                 </button>
               </div>
             </div>
           )}
+        </div>
+
+        {/* Add the UserImageGrid component below */}
+        <div className="max-w-4xl mx-auto">
+          <MosaicGrid 
+            refreshTrigger={refreshGridTrigger}
+            onImageDeleted={() => setRefreshGridTrigger(prev => prev + 1)}
+          />
         </div>
       </div>
     </SignedIn>

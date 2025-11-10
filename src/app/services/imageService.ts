@@ -70,6 +70,29 @@ export async function uploadToCloudinary(file: File, folder?: string): Promise<U
 }
 
 /**
+ * Delete an uploaded image
+ */
+export async function deleteUploadedImage(imageId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const response = await fetch(`/api/images?id=${imageId}`, {
+      method: 'DELETE',
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to delete image');
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Delete failed'
+    };
+  }
+}
+
+/**
  * Clean up object URLs to prevent memory leaks
  */
 export function cleanupObjectUrl(url: string): void {
