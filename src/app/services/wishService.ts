@@ -22,7 +22,7 @@ export async function getWishes(limit = 50, offset = 0): Promise<BestWish[]> {
     try {
       const { data, error } = await supabase
         .from('best_wishes')
-        .select('id, text, author, image_url, created_at, user_id')
+        .select('id, text, author, image_url, created_at, updated_at, user_id')
         .eq('is_approved', true)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false })
@@ -58,15 +58,33 @@ export async function getUserWishes(userId: string): Promise<BestWish[]> {
  * Update wish
  */
 export async function updateWish(id: string, updates: Partial<BestWish>): Promise<BestWish> {
-    const { data, error } = await supabase
-      .from('best_wishes')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
+  try {
+    const response = await fetch('/api/wishes', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        id: id,
+        ...updates
+      }),
+    });
 
-  if (error) throw error;
-  return data;
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Failed to update wish');
+    }
+
+    const result = await response.json();
+    
+    // Clear cache after successful update
+    localStorage.removeItem(CACHE_KEY);
+    
+    return result.wish;
+  } catch (error) {
+    console.error('Error updating wish:', error);
+    throw error;
+  }
 }
 
 /**

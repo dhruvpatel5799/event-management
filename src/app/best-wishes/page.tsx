@@ -104,6 +104,16 @@ export default function BestWishesWall() {
     setWishes(prev => prev.filter(wish => wish.id !== wishId));
   };
 
+  const handleUpdateWish = (wishId: string, updatedWish: BestWish) => {
+    if (!updatedWish) {
+      console.error('Updated wish is null or undefined');
+      return;
+    }
+    
+    setWishes(prev => prev.map(wish => 
+      wish.id === wishId ? updatedWish : wish
+    ));
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 pb-20 lg:pb-8">
@@ -258,6 +268,7 @@ export default function BestWishesWall() {
               currentUserId={user?.id}
               isModerator={user?.publicMetadata?.role === 'moderator' || user?.publicMetadata?.role === 'admin'}
               onDelete={handleDeleteWish}
+              onUpdate={handleUpdateWish}
             />
           ))}
         </div>

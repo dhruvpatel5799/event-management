@@ -134,7 +134,9 @@ export async function PUT(request: NextRequest) {
     const { data, error } = await supabase
       .from('best_wishes')
       .update(allowedUpdates)
-      .eq('id', body.id);
+      .eq('id', body.id)
+      .select()
+      .single();
     
     if (error) throw error;
     
