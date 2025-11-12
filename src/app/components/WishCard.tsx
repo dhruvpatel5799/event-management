@@ -160,7 +160,7 @@ export default memo(function WishCard({
 
         {/* Image Section */}
         {wish.image_url && (
-          <div className="relative h-100 bg-gray-100">
+          <div className="relative aspect-square bg-gray-100">
             <Image
               src={generateThumbnailUrl(wish.image_url, { width: 400, height: 400 })}
               alt="Wish image"
