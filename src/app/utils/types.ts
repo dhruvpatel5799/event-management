@@ -30,13 +30,3 @@ export interface BestWish {
     created_at: string;
     is_deleted: boolean;
   }
-  
-  // For form submissions
-  export interface CreateWishRequest {
-    text: string;
-    author: string;
-    user_id?: string;
-    image_url?: string;
-    image_filename?: string;
-    image_size?: number;
-  }

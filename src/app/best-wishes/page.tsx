@@ -100,6 +100,20 @@ export default function BestWishesWall() {
     }
   };
 
+  const handleDeleteWish = (wishId: string) => {
+    setWishes(prev => prev.filter(wish => wish.id !== wishId));
+  };
+
+  const handleUpdateWish = (wishId: string, updatedWish: BestWish) => {
+    if (!updatedWish) {
+      console.error('Updated wish is null or undefined');
+      return;
+    }
+    
+    setWishes(prev => prev.map(wish => 
+      wish.id === wishId ? updatedWish : wish
+    ));
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 pb-20 lg:pb-8">
@@ -247,7 +261,15 @@ export default function BestWishesWall() {
         {/* Wishes Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {wishes.map((wish, index) => (
-            <WishCard key={wish.id} wish={wish} index={index} />
+            <WishCard 
+              key={wish.id} 
+              wish={wish} 
+              index={index}
+              currentUserId={user?.id}
+              isModerator={user?.publicMetadata?.role === 'moderator' || user?.publicMetadata?.role === 'admin'}
+              onDelete={handleDeleteWish}
+              onUpdate={handleUpdateWish}
+            />
           ))}
         </div>
 

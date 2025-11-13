@@ -8,7 +8,7 @@ interface ImageFeedModalProps {
   onClose: () => void;
   initialImageIndex: number;
   allImages: Array<{
-    id: string;
+    public_id: string;
     src: string;
     uploaded_at?: string;
     alt: string;
@@ -44,7 +44,7 @@ export default function ImageFeedModal({ isOpen, onClose, initialImageIndex, all
   // Convert initial images to feed format
   const convertToFeedImages = useCallback((images: typeof allImages): FeedImage[] => {
     return images.map((img) => ({
-      id: img.id,
+      public_id: img.public_id,
       image_url: img.src,
       username: 'Event Gallery',
       uploaded_at: img.uploaded_at ?? '',
@@ -201,7 +201,7 @@ useEffect(() => {
         >
           {feedImages.map((image, index) => (
             <div
-              key={image.id}
+              key={image.public_id}
               className="min-h-screen flex flex-col bg-black text-white relative"
               style={{ scrollSnapAlign: 'start' }}
             >
