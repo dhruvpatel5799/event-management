@@ -29,7 +29,6 @@ export default function EventSchedule({ days }: Props) {
         <div className="text-center text-xs text-gray-500 my-10">
           <p>Kadva Patel Samaj</p>
           <p>Main Bus stand Road, Near Makadiyawadi, Jamjodhpur</p>
-          <p>+1 212-875-5456  ·  +1 212-875-5457</p>
         </div>
       </div>
     </div>
