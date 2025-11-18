@@ -92,8 +92,8 @@ const CountdownBox = () => {
         )}
 
         <div className="mt-6 text-center">
-          <button onClick={() => router.push('/guest-list')} className="bg-white bg-opacity-20 hover:bg-opacity-30 text-green-900 font-semibold py-2 px-6 rounded-full transition-all duration-300 backdrop-blur-sm border border-white border-opacity-20">
-            RSVP
+          <button onClick={() => router.push('/event-schedule')} className="bg-white bg-opacity-20 hover:bg-opacity-30 text-green-900 font-semibold py-2 px-6 rounded-full transition-all duration-300 backdrop-blur-sm border border-white border-opacity-20">
+            Event Schedule
           </button>
         </div>
       </div>
