@@ -13,7 +13,7 @@ interface TimeLeft {
 const CountdownBox = () => {
   const router = useRouter();
   // Set event date (you can modify this to any future date)
-  const eventDate = new Date('2025-12-05').getTime();
+  const eventDate = new Date('2025-12-04').getTime();
   
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({
     days: 0,

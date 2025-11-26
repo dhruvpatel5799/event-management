@@ -60,28 +60,6 @@ export default function SignInPopup() {
                 Your memories make our celebration complete! ✨
               </p>
 
-              {/* Features List */}
-              <div className="mb-8 space-y-3">
-                <div className="flex items-center justify-center text-sm text-gray-600">
-                  <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Upload photos
-                </div>
-                <div className="flex items-center justify-center text-sm text-gray-600">
-                  <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Share special moments
-                </div>
-                <div className="flex items-center justify-center text-sm text-gray-600">
-                  <svg className="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Extend your best wishes to the Newlyweds
-                </div>
-              </div>
-
               {/* Sign In Button */}
               <button
                 onClick={() => openSignIn()}
@@ -103,16 +81,6 @@ export default function SignInPopup() {
                 {/* Shimmer Effect */}
                 <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer"></div>
               </button>
-
-              {/* Social Proof */}
-              <div className="mt-6 flex items-center justify-center space-x-2 text-xs text-gray-500">
-                <div className="flex -space-x-2">
-                  <div className="w-6 h-6 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full border-2 border-white"></div>
-                  <div className="w-6 h-6 bg-gradient-to-br from-pink-400 to-indigo-400 rounded-full border-2 border-white"></div>
-                  <div className="w-6 h-6 bg-gradient-to-br from-indigo-400 to-purple-400 rounded-full border-2 border-white"></div>
-                </div>
-                <span>Join 50+ guests sharing memories</span>
-              </div>
 
               {/* Security Note */}
               <div className="mt-4 flex items-center justify-center text-xs text-gray-400">
